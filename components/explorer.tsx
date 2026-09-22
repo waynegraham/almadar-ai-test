@@ -162,7 +162,7 @@ export default function Explorer({ data }: { data: Dataset }) {
     )
     .slice(0, 20);
   return (
-    <main className="min-h-screen bg-[#f5f3ed] text-[#263c36]">
+    <main className="explorer min-h-screen">
       <header className="topbar">
         <a className="brand" href="/" aria-label="Almadar home">
           <img
@@ -174,18 +174,48 @@ export default function Explorer({ data }: { data: Dataset }) {
           />
           <span className="brand-sub">MANUSCRIPT EXPLORER</span>
         </a>
-        <div className="header-caption">A closer reading of the collection</div>
+        <nav className="header-nav" aria-label="Explorer navigation">
+          {(["regions", "search", "dataset"] as const).map((section) => (
+            <button
+              key={section}
+              className={tab === section ? "active" : ""}
+              aria-current={tab === section ? "page" : undefined}
+              onClick={() => {
+                setTab(section);
+                document
+                  .querySelector(".inspector")
+                  ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              }}
+            >
+              {section === "regions"
+                ? "Manuscript"
+                : section === "search"
+                  ? "Search"
+                  : "Dataset"}
+            </button>
+          ))}
+        </nav>
         <button className="button" onClick={download}>
           <Download size={15} /> Export dataset
         </button>
       </header>
       <section className="intro">
-        <div>
+        <div className="intro-image" aria-hidden="true">
+          <img
+            src={`${data.pages[0].service}/full/!1000,1400/0/default.jpg`}
+            alt=""
+          />
+        </div>
+        <div className="intro-copy">
           <div className="eyebrow">
-            THE DIGITAL READING ROOM <span> / </span> MANUSCRIPT 01
+            Research <span>/</span> Manuscript explorer
           </div>
-          <h1>Between the lines.</h1>
-          <p>Explore the page. Discover its structure. Follow the text.</p>
+          <h1>
+            Between
+            <br />
+            the lines.
+          </h1>
+          <p>Explore the written past, one detail at a time.</p>
         </div>
         <div className="collection-stats">
           <div>
@@ -202,7 +232,14 @@ export default function Explorer({ data }: { data: Dataset }) {
           </div>
         </div>
       </section>
-      <div className="workspace">
+      <div className="workspace-heading">
+        <h2>The manuscript</h2>
+        <p>
+          Arabic, Ottoman Turkish &amp; Persian <span> / </span> Six pages,
+          closely read
+        </p>
+      </div>
+      <div className="workspace" id="manuscript">
         <aside className="pages">
           <div className="section-label">
             <BookOpen size={14} /> THE MANUSCRIPT
@@ -598,8 +635,13 @@ export default function Explorer({ data }: { data: Dataset }) {
       </div>
       <footer className="site-footer">
         <span>
-          ALMADAR <span className="footer-divider">/</span> A window into the
-          written past.
+          <img
+            src="/branding/logo-en-light.svg"
+            width={240}
+            height={59}
+            alt="AlMadar"
+          />
+          <span>A window into the written past.</span>
         </span>
         <span>IIIF images · ALTO annotations · Open exploration</span>
       </footer>

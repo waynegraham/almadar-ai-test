@@ -57,9 +57,15 @@ export default function Viewer(props: Props) {
           workspaceControlPanel: { enabled: false },
           thumbnailNavigation: { defaultPosition: "off" },
           theme: {
+            components: {
+              MuiPaper: { styleOverrides: { root: { boxShadow: "none" } } },
+            },
             typography: { fontFamily: '"Public Sans", Arial, sans-serif' },
             palette: {
-              primary: { main: "#486859" },
+              primary: { main: "#002fd3" },
+              secondary: { main: "#002fd3" },
+              background: { default: "#e5e6ec", paper: "#ece8e5" },
+              shades: { dark: "#201f1f", main: "#ece8e5", light: "#e5e6ec" },
               annotations: {
                 default: { strokeStyle: "#b79345", globalAlpha: 0.8 },
                 selected: { strokeStyle: "#e06a35", globalAlpha: 1 },
@@ -67,7 +73,10 @@ export default function Viewer(props: Props) {
               },
             },
           },
-          osdConfig: { preserveViewport: false, crossOriginPolicy: "Anonymous" },
+          osdConfig: {
+            preserveViewport: false,
+            crossOriginPolicy: "Anonymous",
+          },
         });
         instance.current = local;
         let lastCanvas = "",
@@ -125,8 +134,12 @@ export default function Viewer(props: Props) {
         }),
       );
     } else {
-      const current = viewer.store.getState().windows.manuscript?.selectedAnnotationId;
-      if (current) viewer.store.dispatch(M.actions.deselectAnnotation("manuscript", current));
+      const current =
+        viewer.store.getState().windows.manuscript?.selectedAnnotationId;
+      if (current)
+        viewer.store.dispatch(
+          M.actions.deselectAnnotation("manuscript", current),
+        );
     }
   }, [props.page, props.selected, ready]);
   return (
