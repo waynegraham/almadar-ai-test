@@ -1,2 +1,10 @@
 .kilo
 images
+node_modules
+node_modules/
+.next/
+.env*
+!.env.example
+*.tsbuildinfo
+.playwright-cli/
+output/
