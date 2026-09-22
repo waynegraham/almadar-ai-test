@@ -233,7 +233,7 @@ export default function Explorer({ data }: { data: Dataset }) {
         </div>
       </section>
       <div className="workspace-heading">
-        <h2>The manuscript</h2>
+        <h2>Example Manuscript</h2>
         <p>
           Arabic, Ottoman Turkish &amp; Persian <span> / </span> Six pages,
           closely read
