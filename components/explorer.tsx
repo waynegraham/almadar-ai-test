@@ -165,10 +165,14 @@ export default function Explorer({ data }: { data: Dataset }) {
     <main className="min-h-screen bg-[#f5f3ed] text-[#263c36]">
       <header className="topbar">
         <a className="brand" href="/" aria-label="Almadar home">
-          <span className="brand-mark">ا</span>
-          <span>
-            ALMADAR<span className="brand-sub">MANUSCRIPT EXPLORER</span>
-          </span>
+          <img
+            className="brand-logo"
+            src="/branding/logo-en-light.svg"
+            width={240}
+            height={59}
+            alt="AlMadar"
+          />
+          <span className="brand-sub">MANUSCRIPT EXPLORER</span>
         </a>
         <div className="header-caption">A closer reading of the collection</div>
         <button className="button" onClick={download}>

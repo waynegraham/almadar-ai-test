@@ -57,6 +57,7 @@ export default function Viewer(props: Props) {
           workspaceControlPanel: { enabled: false },
           thumbnailNavigation: { defaultPosition: "off" },
           theme: {
+            typography: { fontFamily: '"Public Sans", Arial, sans-serif' },
             palette: {
               primary: { main: "#486859" },
               annotations: {
