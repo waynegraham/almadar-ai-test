@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { highlights } from "@/lib/highlights";
 import {
   ArrowUpRight,
   Download,
@@ -48,7 +49,37 @@ export default function Explorer({ data }: { data: Dataset }) {
   const page = data.pages[pageIndex],
     all = data.pages.flatMap((p) => p.regions),
     blocks = all.filter((r) => r.level === "block");
+  const selectionHeading = useRef<HTMLHeadingElement>(null);
+  const selectionTrigger = useRef<HTMLElement | null>(null);
+  const activeHighlight = highlights.find((h) => h.regionId === selected?.id);
+  const highlightIndex = highlights.findIndex((h) => h.regionId === selected?.id);
+  function clearSelection() {
+    setSelected(undefined);
+    setNotice("");
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  function closeSelection() {
+    clearSelection();
+    selectionTrigger.current?.focus({ preventScroll: true });
+  }
+  function openHighlight(index: number) {
+    const region = all.find((r) => r.id === highlights[index].regionId);
+    if (!region) return;
+    setTab("regions");
+    setFilter("All types");
+    choose(region);
+    document.getElementById("manuscript")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  useEffect(() => {
+    if (!selected || tab === "dataset") return;
+    selectionHeading.current?.focus({ preventScroll: true });
+    document.querySelector(".inspector-content")?.scrollTo({ top: 0 });
+  }, [selected, tab]);
   function choose(r: Region) {
+    if (!document.activeElement?.closest(".selection")) {
+      selectionTrigger.current = document.activeElement as HTMLElement | null;
+    }
+    setNotice("");
     setPageIndex(data.pages.findIndex((p) => p.id === r.pageId));
     setLevel(r.level);
     setSelected(r);
@@ -188,15 +219,15 @@ export default function Explorer({ data }: { data: Dataset }) {
               }}
             >
               {section === "regions"
-                ? "Manuscript"
+                ? "Discover"
                 : section === "search"
                   ? "Search"
-                  : "Dataset"}
+                  : "For researchers"}
             </button>
           ))}
         </nav>
-        <button className="button" onClick={download}>
-          <Download size={15} /> Export dataset
+        <button className="button" onClick={() => openHighlight(0)}>
+          <BookOpen size={15} /> Take a tour
         </button>
       </header>
       <section className="intro">
@@ -208,23 +239,27 @@ export default function Explorer({ data }: { data: Dataset }) {
         </div>
         <div className="intro-copy">
           <div className="eyebrow">
-            Research <span>/</span> Manuscript explorer
+            Discover <span>/</span> Manuscript explorer
           </div>
           <h1>
-            Between
+            Discover the details.
             <br />
-            the lines.
+            Explore handwritten pages.
           </h1>
-          <p>Explore the written past, one detail at a time.</p>
+          <p>Explore six manuscript pages, examine details up close, and compare handwriting with its original transcription.</p>
+          <div className="intro-actions">
+            <button className="button solid" onClick={() => openHighlight(0)}>Explore three highlights <ChevronRight size={16} /></button>
+            <a className="button" href="#manuscript" onClick={() => { clearSelection(); setTab("regions"); }}>Browse all six pages</a>
+          </div>
         </div>
         <div className="collection-stats">
           <div>
-            <b>06</b>
+            <b>{String(data.pages.length).padStart(2, "0")}</b>
             <span>Pages</span>
           </div>
           <div>
             <b>{blocks.length}</b>
-            <span>Regions</span>
+            <span>Details</span>
           </div>
           <div>
             <b>03</b>
@@ -232,8 +267,30 @@ export default function Explorer({ data }: { data: Dataset }) {
           </div>
         </div>
       </section>
+      <section className="discovery" aria-labelledby="discovery-title">
+        <div className="discovery-heading">
+          <div><span className="eyebrow">A TWO-MINUTE TOUR</span><h2 id="discovery-title">Start with something small.</h2></div>
+          <p>No language knowledge needed. Follow these observation prompts, then share what catches your eye.</p>
+        </div>
+        <div className="highlight-grid">
+          {highlights.map((highlight, index) => {
+            const region = all.find((r) => r.id === highlight.regionId);
+            const sourcePage = data.pages.find((p) => p.id === region?.pageId);
+            if (!region || !sourcePage) return null;
+            return <button className="highlight-card" key={highlight.regionId} onClick={() => openHighlight(index)}>
+              <img src={cropUrl(sourcePage, region).replace("/max/", "/!600,360/")} alt={`Detail labelled ${region.label} on page ${sourcePage.order}`} loading="lazy" />
+              <span className="highlight-copy"><span className="eyebrow">0{index + 1} / PAGE {sourcePage.order}</span><strong>{highlight.title} <ArrowUpRight size={18} /></strong><span>{highlight.description}</span></span>
+            </button>;
+          })}
+        </div>
+        <details className="sample-context">
+          <summary>About this six-page sample</summary>
+          <p>Explore how handwriting, headings, and stamps are recorded as individual details. Use the prompts for a classroom observation activity, compare image and text, or copy a link to discuss a discovery.</p>
+          <p>The project describes the sample as Arabic, Ottoman Turkish, and Persian. Individual manuscript titles, dates, places of origin, and holding collections are not supplied in this dataset. Source labels and transcriptions are unreviewed; these prompts are not translations or historical interpretations.</p>
+        </details>
+      </section>
       <div className="workspace-heading">
-        <h2>Example Manuscript</h2>
+        <h2>Explore the six-page sample</h2>
         <p>
           Arabic, Ottoman Turkish &amp; Persian <span> / </span> Six pages,
           closely read
@@ -251,8 +308,7 @@ export default function Explorer({ data }: { data: Dataset }) {
                 className={`page-card ${i === pageIndex ? "active" : ""}`}
                 onClick={() => {
                   setPageIndex(i);
-                  setSelected(undefined);
-                  history.replaceState(null, "", location.pathname);
+                  clearSelection();
                 }}
                 aria-pressed={i === pageIndex}
               >
@@ -283,7 +339,7 @@ export default function Explorer({ data }: { data: Dataset }) {
               <h2>Page {String(page.order).padStart(2, "0")}</h2>
             </div>
             <span className="iiif-badge">
-              <span /> IIIF viewer
+              <span /> Zoom & explore
             </span>
           </div>
           <div className="reader-tools">
@@ -292,16 +348,16 @@ export default function Explorer({ data }: { data: Dataset }) {
                 className={level === "block" ? "chosen" : ""}
                 onClick={() => {
                   setLevel("block");
-                  setSelected(undefined);
+                  clearSelection();
                 }}
               >
-                <Layers size={14} /> Regions
+                <Layers size={14} /> Details
               </button>
               <button
                 className={level === "line" ? "chosen" : ""}
                 onClick={() => {
                   setLevel("line");
-                  setSelected(undefined);
+                  clearSelection();
                 }}
               >
                 <ScanLine size={14} /> Lines
@@ -319,7 +375,7 @@ export default function Explorer({ data }: { data: Dataset }) {
                 const i = data.pages.findIndex((p) => p.id === id);
                 if (i >= 0) {
                   setPageIndex(i);
-                  setSelected(undefined);
+                  clearSelection();
                 }
               }}
             />
@@ -331,7 +387,7 @@ export default function Explorer({ data }: { data: Dataset }) {
             </span>
           </div>
         </section>
-        <aside className="inspector">
+        <aside className={`inspector ${selected && tab !== "dataset" ? "has-selection" : ""}`} onKeyDown={(event) => { if (event.key === "Escape" && selected) { event.stopPropagation(); closeSelection(); } }}>
           <div className="tabs">
             {(["regions", "search", "dataset"] as const).map((t) => (
               <button
@@ -340,28 +396,89 @@ export default function Explorer({ data }: { data: Dataset }) {
                 onClick={() => setTab(t)}
               >
                 {t === "regions"
-                  ? "Explore"
+                  ? "Discover"
                   : t === "search"
                     ? "Search"
-                    : "Dataset"}
+                    : "For researchers"}
               </button>
             ))}
           </div>
           <div className="inspector-content">
+            {selected && tab !== "dataset" && (
+              <section className="selection" aria-labelledby="selection-heading">
+                <div className="selection-title">
+                  <span className="eyebrow">
+                    SELECTED {selected.level === "block" ? "REGION" : "LINE"}
+                  </span>
+                  <button
+                    aria-label="Close selection"
+                    onClick={closeSelection}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <button className="text-button" onClick={closeSelection}>← Back to {tab === "search" ? "search results" : "all details"}</button>
+                <h3 id="selection-heading" tabIndex={-1} ref={selectionHeading}>{activeHighlight?.title || `${selected.label} · Page ${page.order}`}</h3>
+                {activeHighlight && <><p className="body-copy">{activeHighlight.description}</p><p className="activity-prompt">{activeHighlight.activity}</p></>}
+                <img className="selection-crop" src={cropUrl(page, selected).replace("/max/", "/!800,600/")} alt={`${selected.label} detail from manuscript page ${page.order}`} />
+                <h4 className="small-title">Original transcription</h4>
+                <p className={selected.text ? "arabic transcription" : "body-copy"} dir={selected.text ? "rtl" : "ltr"}>
+                  {selected.text || "No transcription available"}
+                </p>
+                {selected.confidence !== undefined && (
+                  <p className="model-note">
+                    Mean OCR confidence:{" "}
+                    {(selected.confidence * 100).toFixed(1)}% · not human
+                    verification
+                  </p>
+                )}
+                <div className="selection-actions">
+                  <a
+                    className="text-button"
+                    href={cropUrl(page, selected)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View full-size detail <ArrowUpRight size={14} />
+                  </a>
+                  <button
+                    className="text-button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(
+                          `${location.origin}/#${encodeURIComponent(selected.id)}`,
+                        );
+                        setNotice("Region link copied.");
+                      } catch {
+                        setNotice("Copy the region link from the address bar.");
+                      }
+                    }}
+                  >
+                    <LinkIcon size={13} /> Share this detail
+                  </button>
+                </div>
+                <p className="model-note">Source transcription is unreviewed. A reviewed English translation is not available for this sample.</p>
+                {notice && <p role="status" className="body-copy">{notice}</p>}
+                {activeHighlight && <div className="tour-navigation"><span>Highlight {highlightIndex + 1} of {highlights.length}</span><button className="button" onClick={() => highlightIndex < highlights.length - 1 ? openHighlight(highlightIndex + 1) : closeSelection()}>{highlightIndex < highlights.length - 1 ? "Next highlight →" : "Finish tour"}</button></div>}
+                <details className="technical-details"><summary>Source details</summary>
+                <code className="region-id">{selected.sourceId}</code></details>
+              </section>
+            )}
+
             {tab !== "dataset" && (
               <>
                 <div className="panel-heading">
                   <h2>
-                    {tab === "regions" ? "Anatomy of a page" : "Find a passage"}
+                    {tab === "regions" ? "Discover this page" : "Find a passage"}
                   </h2>
                   <p>
                     {tab === "regions"
-                      ? "The annotations behind the manuscript."
+                      ? "Choose a detail to see its image and original text."
                       : "Search the text, or explore across languages."}
                   </p>
                 </div>
                 <label className="filter-label">
-                  REGION TYPE
+                  DETAIL TYPE
                   <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
@@ -375,6 +492,10 @@ export default function Explorer({ data }: { data: Dataset }) {
             )}
             {tab === "search" && (
               <>
+                <div className="instant-examples">
+                  <p className="body-copy">Start with a detail — no model download needed:</p>
+                  {highlights.map((h, i) => <button className="text-button" key={h.regionId} onClick={() => openHighlight(i)}>{h.title} <ChevronRight size={14} /></button>)}
+                </div>
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -402,7 +523,7 @@ export default function Explorer({ data }: { data: Dataset }) {
                 <div className="ai-card">
                   <Sparkles size={18} />
                   <div>
-                    <strong>Read across languages</strong>
+                    <strong>Experimental search across languages</strong>
                     <p>
                       Optional browser AI matches English queries to source
                       passages. Results are experimental, especially for Ottoman
@@ -565,67 +686,7 @@ export default function Explorer({ data }: { data: Dataset }) {
                 </a>
               </>
             )}
-            {selected && tab !== "dataset" && (
-              <section className="selection">
-                <div className="selection-title">
-                  <span className="eyebrow">
-                    SELECTED {selected.level === "block" ? "REGION" : "LINE"}
-                  </span>
-                  <button
-                    aria-label="Close selection"
-                    onClick={() => setSelected(undefined)}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <h3>{selected.label}</h3>
-                <p className="arabic transcription" dir="rtl">
-                  {selected.text || "No transcription available"}
-                </p>
-                {selected.confidence !== undefined && (
-                  <p className="model-note">
-                    Mean OCR confidence:{" "}
-                    {(selected.confidence * 100).toFixed(1)}% · not human
-                    verification
-                  </p>
-                )}
-                <div className="selection-actions">
-                  <a
-                    className="text-button"
-                    href={cropUrl(page, selected)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open image crop <ArrowUpRight size={14} />
-                  </a>
-                  <button
-                    className="text-button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(
-                          `${location.origin}/#${encodeURIComponent(selected.id)}`,
-                        );
-                        setNotice("Region link copied.");
-                      } catch {
-                        setNotice("Copy the region link from the address bar.");
-                      }
-                    }}
-                  >
-                    <LinkIcon size={13} /> Copy link
-                  </button>
-                </div>
-                <div className="translation-note">
-                  <strong>English translation</strong>
-                  <p>
-                    Not yet generated. Browser translation for these historical
-                    languages requires evaluation; original text is preserved
-                    above.
-                  </p>
-                </div>
-                <code className="region-id">{selected.sourceId}</code>
-              </section>
-            )}
-            {notice && (
+            {notice && !selected && (
               <p role="status" className="model-note">
                 {notice}
               </p>
